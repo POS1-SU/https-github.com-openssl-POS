@@ -200,7 +200,7 @@ static char *opt_srv_trusted = NULL;
 static char *opt_srv_untrusted = NULL;
 static char *opt_ref_cert = NULL;
 static char *opt_rsp_cert = NULL;
-static char *opt_rsp_cert_key = NULL;
+static char *opt_rsp_key = NULL;
 static char *opt_rsp_keypass = NULL;
 static char *opt_rsp_crl = NULL;
 static char *opt_rsp_extracerts = NULL;
@@ -286,7 +286,7 @@ typedef enum OPTION_choice {
     OPT_SRV_REF, OPT_SRV_SECRET,
     OPT_SRV_CERT, OPT_SRV_KEY, OPT_SRV_KEYPASS,
     OPT_SRV_TRUSTED, OPT_SRV_UNTRUSTED,
-    OPT_REF_CERT, OPT_RSP_CERT, OPT_RSP_CERT_KEY, OPT_RSP_KEYPASS,
+    OPT_REF_CERT, OPT_RSP_CERT, OPT_RSP_KEY, OPT_RSP_KEYPASS,
     OPT_RSP_CRL, OPT_RSP_EXTRACERTS, OPT_RSP_CAPUBS,
     OPT_RSP_NEWWITHNEW, OPT_RSP_NEWWITHOLD, OPT_RSP_OLDWITHNEW,
     OPT_POLL_COUNT, OPT_CHECK_AFTER,
@@ -334,7 +334,7 @@ const OPTIONS cmp_options[] = {
     {"centralkeygen", OPT_CENTRALKEYGEN, '-',
      "Request central (server-side) key generation. Default is local generation"},
     {"newkeyout", OPT_NEWKEYOUT, 's',
-     "File to save new key generated in central key generation"},
+     "File to save centrally generated key, in PEM format"},
     {"subject", OPT_SUBJECT, 's',
      "Distinguished Name (DN) of subject to use in the requested cert template"},
     {OPT_MORE_STR, 0, 0,
@@ -580,7 +580,7 @@ const OPTIONS cmp_options[] = {
      "Certificate to be expected for rr and any oldCertID in kur messages"},
     {"rsp_cert", OPT_RSP_CERT, 's',
      "Certificate to be returned as mock enrollment result"},
-    {"rsp_cert_key", OPT_RSP_CERT_KEY, 's',
+    {"rsp_key", OPT_RSP_KEY, 's',
      "Private key for the certificate to be returned as mock enrollment result"},
     {OPT_MORE_STR, 0, 0,
      "Key to be returned for central key pair generation"},
@@ -698,7 +698,7 @@ static varref cmp_vars[] = { /* must be in same order as enumerated above! */
     {&opt_srv_ref}, {&opt_srv_secret},
     {&opt_srv_cert}, {&opt_srv_key}, {&opt_srv_keypass},
     {&opt_srv_trusted}, {&opt_srv_untrusted},
-    {&opt_ref_cert}, {&opt_rsp_cert}, {&opt_rsp_cert_key}, {&opt_rsp_keypass},
+    {&opt_ref_cert}, {&opt_rsp_cert}, {&opt_rsp_key}, {&opt_rsp_keypass},
     {&opt_rsp_crl}, {&opt_rsp_extracerts}, {&opt_rsp_capubs},
     {&opt_rsp_newwithnew}, {&opt_rsp_newwithold}, {&opt_rsp_oldwithnew},
 
@@ -1217,13 +1217,13 @@ static OSSL_CMP_SRV_CTX *setup_srv_ctx(ENGINE *engine)
                         (add_X509_fn_t)ossl_cmp_mock_srv_set1_certOut))
             goto err;
     }
-    if (opt_rsp_cert_key != NULL) {
-        EVP_PKEY *pkey = load_key_pwd(opt_rsp_cert_key, opt_keyform,
+    if (opt_rsp_key != NULL) {
+        EVP_PKEY *pkey = load_key_pwd(opt_rsp_key, opt_keyform,
                                       opt_rsp_keypass, engine,
                                       "private key for enrollment cert");
 
         if (pkey == NULL
-            || !ossl_cmp_mock_srv_set1_certOutKey(srv_ctx, pkey)) {
+            || !ossl_cmp_mock_srv_set1_keyOut(srv_ctx, pkey)) {
             EVP_PKEY_free(pkey);
             goto err;
         }
@@ -1704,11 +1704,11 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
         if (opt_reqin == NULL && opt_newkey == NULL && !opt_centralkeygen
             && opt_key == NULL && opt_csr == NULL && opt_oldcert == NULL) {
             CMP_err("missing -newkey (or -key) to be certified and no -csr, -oldcert, -cert, or -reqin option given, which could provide fallback public key."
-                    "Neither central key generation is requested.");
+                    " Neither central key generation is requested.");
             return 0;
         }
         if (opt_popo == OSSL_CRMF_POPO_NONE && !opt_centralkeygen) {
-            CMP_info("POPO is disabled, using -centralkeygen");
+            CMP_info("POPO is disabled, which implies -centralkeygen");
             opt_centralkeygen = 1;
         }
         if (opt_centralkeygen) {
@@ -1717,7 +1717,7 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
                 return 0;
             }
             if (opt_newkeyout == NULL) {
-                CMP_err("-newkeyout not given, nowhere to save newly generated key");
+                CMP_err("-newkeyout not given, nowhere to save centrally generated key");
                 return 0;
             }
             opt_popo = OSSL_CRMF_POPO_NONE;
@@ -1769,8 +1769,10 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
             CMP_warn1("-policies %s", msg);
         if (opt_policy_oids != NULL)
             CMP_warn1("-policy_oids %s", msg);
+        if (opt_popo != OSSL_CRMF_POPO_NONE - 1)
+            CMP_warn1("-popo %s", msg);
         if (opt_centralkeygen)
-            CMP_warn1("-centralkeygen %s", msg);
+            CMP_warn1("-popo -1 or -centralkeygen %s", msg);
         if (opt_newkeyout != NULL)
             CMP_warn1("-newkeyout %s", msg);
         if (opt_cmd != CMP_P10CR) {
@@ -1877,7 +1879,7 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
             pkey = load_pubkey(file, format, 0, pass, engine, desc);
             priv = 0;
         }
-        cleanse(opt_newkeypass);
+
         if (pkey == NULL || !OSSL_CMP_CTX_set0_newPkey(ctx, priv, pkey)) {
             EVP_PKEY_free(pkey);
             return 0;
@@ -3141,8 +3143,8 @@ static int get_opts(int argc, char **argv)
         case OPT_RSP_CERT:
             opt_rsp_cert = opt_str();
             break;
-        case OPT_RSP_CERT_KEY:
-            opt_rsp_cert_key = opt_str();
+        case OPT_RSP_KEY:
+            opt_rsp_key = opt_str();
             break;
         case OPT_RSP_KEYPASS:
             opt_rsp_keypass = opt_str();
@@ -3855,17 +3857,25 @@ int cmp_main(int argc, char **argv)
                                 opt_cacertsout, "CA") < 0)
                 goto err;
             if (opt_centralkeygen) {
+                const EVP_CIPHER *cipher = NULL;
+                char *pass_string = NULL;
                 EVP_PKEY *new_key = OSSL_CMP_CTX_get0_newPkey(cmp_ctx, 1 /* priv */);
                 BIO *out = bio_open_owner(opt_newkeyout, FORMAT_PEM, 1);
 
-                if (out == NULL)
+                if (new_key == NULL || out == NULL)
                     goto err;
-                CMP_info1("received central (server) generated key, saving to file '%s'",
-                          opt_newkeyout);
-                if (PEM_write_bio_PrivateKey(out, new_key, NULL, NULL, 0, NULL,
-                                             NULL) <= 0)
+                if (opt_newkeypass != NULL) {
+                    pass_string = get_passwd(opt_newkeypass,
+                                             "Centrally generated private key password");
+                    cipher = EVP_aes_256_cbc();
+                }
+
+                CMP_info1("saving centrally generated key to file '%s'", opt_newkeyout);
+                if (PEM_write_bio_PKCS8PrivateKey(out, new_key, cipher, NULL, 0, NULL,
+                                                  (void *)pass_string) <= 0)
                     goto err;
                 BIO_free(out);
+                clear_free(pass_string);
             }
         }
         if (!OSSL_CMP_CTX_reinit(cmp_ctx))
