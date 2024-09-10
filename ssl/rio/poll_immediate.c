@@ -75,7 +75,7 @@ static int poll_translate_ssl_quic(SSL *ssl,
             return 0;
         }
 
-        if (rd.type != BIO_POLL_DESCRIPTOR_TYPE_SOCK_FD) {
+        if (wd.type != BIO_POLL_DESCRIPTOR_TYPE_SOCK_FD) {
             ERR_raise_data(ERR_LIB_SSL, SSL_R_POLL_REQUEST_NOT_SUPPORTED,
                            "SSL_poll requires the poll descriptors of the "
                            "network BIOs underlying a QUIC SSL object be "

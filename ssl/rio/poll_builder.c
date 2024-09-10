@@ -56,6 +56,10 @@ static int rpb_ensure_alloc(RIO_POLL_BUILDER *rpb, size_t alloc)
 int ossl_rio_poll_builder_add_fd(RIO_POLL_BUILDER *rpb, int fd,
                                  int want_read, int want_write)
 {
+#if RIO_POLL_METHOD == RIO_POLL_METHOD_POLL
+    size_t num_loop;
+#endif
+
     if (fd < 0)
         return 0;
 
@@ -83,8 +87,6 @@ int ossl_rio_poll_builder_add_fd(RIO_POLL_BUILDER *rpb, int fd,
     return 1;
 
 #elif RIO_POLL_METHOD == RIO_POLL_METHOD_POLL
-    size_t num_loop;
-
     for (num_loop = 0;; ++num_loop) {
         size_t i;
         struct pollfd *pfds = (rpb->pfd_heap != NULL ? rpb->pfd_heap : rpb->pfds);
