@@ -38,6 +38,7 @@
         FAIL_FROM(idx_ + 1);                                                \
     } while (0)
 
+#ifndef OPENSSL_NO_QUIC
 static int poll_translate_ssl_quic(SSL *ssl,
                                    QUIC_REACTOR_WAIT_CTX *wctx,
                                    RIO_POLL_BUILDER *rpb,
@@ -167,13 +168,13 @@ static void postpoll_translation_cleanup(SSL_POLL_ITEM *items,
                 break;
 
             switch (ssl->type) {
-#ifndef OPENSSL_NO_QUIC
+# ifndef OPENSSL_NO_QUIC
             case SSL_TYPE_QUIC_LISTENER:
             case SSL_TYPE_QUIC_CONNECTION:
             case SSL_TYPE_QUIC_XSO:
                 postpoll_translation_cleanup_ssl_quic(ssl, wctx);
                 break;
-#endif
+# endif
             default:
                 break;
             }
@@ -213,7 +214,7 @@ static int poll_translate(SSL_POLL_ITEM *items,
                 break;
 
             switch (ssl->type) {
-#ifndef OPENSSL_NO_QUIC
+# ifndef OPENSSL_NO_QUIC
             case SSL_TYPE_QUIC_LISTENER:
             case SSL_TYPE_QUIC_CONNECTION:
             case SSL_TYPE_QUIC_XSO:
@@ -234,7 +235,7 @@ static int poll_translate(SSL_POLL_ITEM *items,
                                                       ossl_time_from_timeval(timeout)));
 
                 break;
-#endif
+# endif
 
             default:
                 ERR_raise_data(ERR_LIB_SSL, SSL_R_POLL_REQUEST_NOT_SUPPORTED,
@@ -323,6 +324,7 @@ out:
     ossl_quic_reactor_wait_ctx_cleanup(&wctx);
     return ok;
 }
+#endif
 
 static int poll_readout(SSL_POLL_ITEM *items,
                         size_t num_items,
@@ -334,11 +336,16 @@ static int poll_readout(SSL_POLL_ITEM *items,
     size_t i, result_count = 0;
     SSL_POLL_ITEM *item;
     SSL *ssl;
-    uint64_t events, revents;
+#ifndef OPENSSL_NO_QUIC
+    uint64_t events;
+#endif
+    uint64_t revents;
 
     for (i = 0; i < num_items; ++i) {
         item    = &ITEM_N(items, stride, i);
+#ifndef OPENSSL_NO_QUIC
         events  = item->events;
+#endif
         revents = 0;
 
         switch (item->desc.type) {
@@ -439,10 +446,12 @@ int SSL_poll(SSL_POLL_ITEM *items,
          * point onwards.
          */
         do_tick = 1;
+#ifndef OPENSSL_NO_QUIC
         if (!poll_block(items, num_items, stride, deadline, &result_count)) {
             ok = 0;
             goto out;
         }
+#endif
     }
 
     /* TODO(QUIC POLLING): Support for polling FDs */
