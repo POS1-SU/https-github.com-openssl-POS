@@ -4868,21 +4868,26 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
     return 1;
 }
 
+QUIC_TAKES_LOCK
 int ossl_quic_get_notifier_fd(SSL *ssl)
 {
     QCTX ctx;
     QUIC_REACTOR *rtor;
     RIO_NOTIFIER *nfy;
+    int nfd;
 
     if (!expect_quic_any(ssl, &ctx))
         return -1;
 
+    qctx_lock(&ctx);
     rtor = ossl_quic_obj_get0_reactor(ctx.obj);
     nfy = ossl_quic_reactor_get0_notifier(rtor);
     if (nfy == NULL)
         return -1;
+    nfd = ossl_rio_notifier_as_fd(nfy);
 
-    return ossl_rio_notifier_as_fd(nfy);
+    qctx_unlock(&ctx);
+    return nfd;
 }
 
 void ossl_quic_enter_blocking_section(SSL *ssl, QUIC_REACTOR_WAIT_CTX *wctx)
