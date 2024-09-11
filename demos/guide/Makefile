@@ -9,6 +9,7 @@ TESTS = tls-client-block \
         quic-client-block \
         quic-multi-stream \
         tls-client-non-block \
+        quic-server-non-block \
         quic-client-non-block
 
 CFLAGS  = -I../../include -g -Wall
@@ -22,6 +23,7 @@ tls-server-block: tls-server-block.o
 quic-client-block: quic-client-block.o
 quic-multi-stream: quic-multi-stream.o
 tls-client-non-block: tls-client-non-block.o
+quic-server-non-block: quic-server-non-block.o
 quic-client-non-block: quic-client-non-block.o
 
 chain: chain.pem
