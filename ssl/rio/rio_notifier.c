@@ -22,6 +22,14 @@ static int set_cloexec(int fd)
 static CRYPTO_ONCE ensure_wsa_startup_once = CRYPTO_ONCE_STATIC_INIT;
 static int wsa_started;
 
+static void ossl_wsa_cleanup(void)
+{
+    if (wsa_started) {
+        wsa_started = 0;
+        WSACleanup();
+    }
+}
+
 DEFINE_RUN_ONCE_STATIC(do_wsa_startup)
 {
     WORD versionreq = 0x0202; /* Version 2.2 */
@@ -30,20 +38,13 @@ DEFINE_RUN_ONCE_STATIC(do_wsa_startup)
     if (WSAStartup(versionreq, &wsadata) != 0)
         return 0;
     wsa_started = 1;
+    OPENSSL_atexit(ossl_wsa_cleanup);
     return 1;
 }
 
 static int ensure_wsa_startup(void)
 {
     return RUN_ONCE(&ensure_wsa_startup_once, do_wsa_startup);
-}
-
-void ossl_wsa_cleanup(void)
-{
-    if (wsa_started) {
-        wsa_started = 0;
-        WSACleanup();
-    }
 }
 
 #endif

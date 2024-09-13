@@ -66,6 +66,4 @@ static ossl_inline ossl_unused int ossl_rio_notifier_as_fd(RIO_NOTIFIER *nfy)
     return nfy->rfd;
 }
 
-void ossl_wsa_cleanup(void);
-
 #endif
