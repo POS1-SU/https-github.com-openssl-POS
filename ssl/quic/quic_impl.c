@@ -18,6 +18,7 @@
 #include "internal/quic_error.h"
 #include "internal/quic_engine.h"
 #include "internal/quic_port.h"
+#include "internal/quic_reactor_wait_ctx.h"
 #include "internal/time.h"
 
 typedef struct qctx_st QCTX;
@@ -1387,7 +1388,7 @@ int ossl_quic_get_net_read_desired(SSL *s)
         return 0;
 
     qctx_lock(&ctx);
-    ret = ossl_quic_reactor_net_read_desired(ossl_quic_channel_get_reactor(ctx.qc->ch));
+    ret = ossl_quic_reactor_net_read_desired(ossl_quic_obj_get0_reactor(ctx.obj));
     qctx_unlock(&ctx);
     return ret;
 }
@@ -1403,7 +1404,7 @@ int ossl_quic_get_net_write_desired(SSL *s)
         return 0;
 
     qctx_lock(&ctx);
-    ret = ossl_quic_reactor_net_write_desired(ossl_quic_channel_get_reactor(ctx.qc->ch));
+    ret = ossl_quic_reactor_net_write_desired(ossl_quic_obj_get0_reactor(ctx.obj));
     qctx_unlock(&ctx);
     return ret;
 }
@@ -4734,6 +4735,20 @@ static int test_poll_event_os(QUIC_CONNECTION *qc, int is_uni)
         && ossl_quic_channel_get_local_stream_count_avail(qc->ch, is_uni) > 0;
 }
 
+/* Do we have the EL (exception: listener) condition? */
+QUIC_NEEDS_LOCK
+static int test_poll_event_el(QUIC_LISTENER *ql)
+{
+    return !ossl_quic_port_is_running(ql->port);
+}
+
+/* Do we have the IC (incoming: connection) condition? */
+QUIC_NEEDS_LOCK
+static int test_poll_event_ic(QUIC_LISTENER *ql)
+{
+    return ossl_quic_port_get_num_incoming_channels(ql->port) > 0;
+}
+
 QUIC_TAKES_LOCK
 int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
                                uint64_t *p_revents)
@@ -4741,13 +4756,12 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
     QCTX ctx;
     uint64_t revents = 0;
 
-    /* TODO(QUIC SERVER): Support listeners */
-    if (!expect_quic_cs(ssl, &ctx))
+    if (!expect_quic_csl(ssl, &ctx))
         return 0;
 
     qctx_lock(&ctx);
 
-    if (!ctx.qc->started) {
+    if (ctx.qc != NULL && !ctx.qc->started) {
         /* We can only try to write on non-started connection. */
         if ((events & SSL_POLL_EVENT_W) != 0)
             revents |= SSL_POLL_EVENT_W;
@@ -4755,7 +4769,7 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
     }
 
     if (do_tick)
-        ossl_quic_reactor_tick(ossl_quic_channel_get_reactor(ctx.qc->ch), 0);
+        ossl_quic_reactor_tick(ossl_quic_obj_get0_reactor(ctx.obj), 0);
 
     if (ctx.xso != NULL) {
         /* SSL object has a stream component. */
@@ -4777,7 +4791,7 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
             revents |= SSL_POLL_EVENT_EW;
     }
 
-    if (!ctx.is_stream) {
+    if (ctx.qc != NULL && !ctx.is_stream) {
         if ((events & SSL_POLL_EVENT_EC) != 0
             && test_poll_event_ec(ctx.qc))
             revents |= SSL_POLL_EVENT_EC;
@@ -4803,10 +4817,66 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
             revents |= SSL_POLL_EVENT_OSU;
     }
 
+    if (ctx.is_listener) {
+        if ((events & SSL_POLL_EVENT_EL) != 0
+            && test_poll_event_el(ctx.ql))
+            revents |= SSL_POLL_EVENT_EL;
+
+        if ((events & SSL_POLL_EVENT_IC) != 0
+            && test_poll_event_ic(ctx.ql))
+            revents |= SSL_POLL_EVENT_IC;
+    }
+
  end:
     qctx_unlock(&ctx);
     *p_revents = revents;
     return 1;
+}
+
+QUIC_TAKES_LOCK
+int ossl_quic_get_notifier_fd(SSL *ssl)
+{
+    QCTX ctx;
+    QUIC_REACTOR *rtor;
+    RIO_NOTIFIER *nfy;
+    int nfd;
+
+    if (!expect_quic_any(ssl, &ctx))
+        return -1;
+
+    qctx_lock(&ctx);
+    rtor = ossl_quic_obj_get0_reactor(ctx.obj);
+    nfy = ossl_quic_reactor_get0_notifier(rtor);
+    if (nfy == NULL)
+        return -1;
+    nfd = ossl_rio_notifier_as_fd(nfy);
+
+    qctx_unlock(&ctx);
+    return nfd;
+}
+
+void ossl_quic_enter_blocking_section(SSL *ssl, QUIC_REACTOR_WAIT_CTX *wctx)
+{
+    QCTX ctx;
+    QUIC_REACTOR *rtor;
+
+    if (!expect_quic_any(ssl, &ctx))
+        return;
+
+    rtor = ossl_quic_obj_get0_reactor(ctx.obj);
+    ossl_quic_reactor_wait_ctx_enter(wctx, rtor);
+}
+
+void ossl_quic_leave_blocking_section(SSL *ssl, QUIC_REACTOR_WAIT_CTX *wctx)
+{
+    QCTX ctx;
+    QUIC_REACTOR *rtor;
+
+    if (!expect_quic_any(ssl, &ctx))
+        return;
+
+    rtor = ossl_quic_obj_get0_reactor(ctx.obj);
+    ossl_quic_reactor_wait_ctx_leave(wctx, rtor);
 }
 
 /*
