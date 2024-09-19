@@ -44,6 +44,13 @@ A context for the seed source can be obtained by calling:
  EVP_RAND *rand = EVP_RAND_fetch(NULL, "JITTER", NULL);
  EVP_RAND_CTX *rctx = EVP_RAND_CTX_new(rand, NULL);
 
+By specifying the `enable-fips-jitter` configuration option, the FIPS
+provider will use an internal jitter source for its entropy.  Enabling
+this option will cause the FIPS provider to operate in a non-compliant
+mode unless an entropy assessment and validation through the
+L<CMVP|https://csrc.nist.gov/projects/cryptographic-module-validation-program>
+are additionally conducted.
+
 =head1 EXAMPLES
 
  EVP_RAND *rand;
