@@ -67,6 +67,8 @@ extern "C" {
 # define OSSL_PARAM_octet_ptr(key, addr, sz) \
     OSSL_PARAM_DEFN((key), OSSL_PARAM_OCTET_PTR, (addr), sz)
 
+# define OSSL_PARAM_is_empty(param) (params == NULL || params->key == NULL)
+
 /* Search an OSSL_PARAM array for a matching name */
 OSSL_PARAM *OSSL_PARAM_locate(OSSL_PARAM *p, const char *key);
 const OSSL_PARAM *OSSL_PARAM_locate_const(const OSSL_PARAM *p, const char *key);

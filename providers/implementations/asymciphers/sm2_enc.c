@@ -190,7 +190,7 @@ static int sm2_set_ctx_params(void *vpsm2ctx, const OSSL_PARAM params[])
 
     if (psm2ctx == NULL)
         return 0;
-    if (params == NULL)
+    if (OSSL_PARAM_is_empty(params))
         return 1;
 
     if (!ossl_prov_digest_load_from_params(&psm2ctx->md, params,

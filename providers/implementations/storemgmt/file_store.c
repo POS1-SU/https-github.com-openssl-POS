@@ -320,7 +320,7 @@ static int file_set_ctx_params(void *loaderctx, const OSSL_PARAM params[])
     struct file_ctx_st *ctx = loaderctx;
     const OSSL_PARAM *p;
 
-    if (params == NULL)
+    if (OSSL_PARAM_is_empty(params))
         return 1;
 
     if (ctx->type != IS_DIR) {

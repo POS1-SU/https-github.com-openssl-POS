@@ -968,9 +968,6 @@ static int ecdsa_sigalg_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     if ((ret = ecdsa_common_set_ctx_params(ctx, params)) <= 0)
         return ret;
 
-    if (params == NULL)
-        return 1;
-
     if (ctx->operation == EVP_PKEY_OP_VERIFYMSG) {
         p = OSSL_PARAM_locate_const(params, OSSL_SIGNATURE_PARAM_SIGNATURE);
         if (p != NULL) {
