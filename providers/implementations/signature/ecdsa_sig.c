@@ -724,7 +724,7 @@ static int ecdsa_common_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 
     if (ctx == NULL)
         return 0;
-    if (params == NULL)
+    if (OSSL_PARAM_is_empty(params))
         return 1;
 
     if (!OSSL_FIPS_IND_SET_CTX_PARAM(ctx, OSSL_FIPS_IND_SETTABLE0, params,
@@ -763,9 +763,6 @@ static int ecdsa_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 
     if ((ret = ecdsa_common_set_ctx_params(ctx, params)) <= 0)
         return ret;
-
-    if (params == NULL)
-        return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_SIGNATURE_PARAM_DIGEST);
     if (p != NULL) {

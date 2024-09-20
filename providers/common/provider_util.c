@@ -94,7 +94,7 @@ int ossl_prov_cipher_load_from_params(PROV_CIPHER *pc,
     const OSSL_PARAM *p;
     const char *propquery;
 
-    if (params == NULL)
+    if (OSSL_PARAM_is_empty(params))
         return 1;
 
     if (!load_common(params, &propquery, &pc->engine))
@@ -179,7 +179,7 @@ int ossl_prov_digest_load_from_params(PROV_DIGEST *pd,
     const OSSL_PARAM *p;
     const char *propquery;
 
-    if (params == NULL)
+    if (OSSL_PARAM_is_empty(params))
         return 1;
 
     if (!load_common(params, &propquery, &pd->engine))
