@@ -21,6 +21,7 @@
 #include "crypto/decoder.h"
 #include "crypto/ctype.h"        /* ossl_isdigit() */
 #include "prov/implementations.h"
+#include "prov/providercommon.h"
 #include "prov/bio.h"
 #include "file_store_local.h"
 #ifdef __CYGWIN__
