@@ -970,7 +970,7 @@ int ossl_drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[])
 {
     const OSSL_PARAM *p;
 
-    if (OSSL_PARAM_is_empty(params))
+    if (OSSL_PARAM_IS_EMPTY(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_DRBG_PARAM_RESEED_REQUESTS);

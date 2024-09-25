@@ -10,6 +10,8 @@
 #include <openssl/provider.h>
 #include <openssl/core_dispatch.h>
 
+#define OSSL_PARAM_IS_EMPTY(params) ((params) == NULL || (params)->key == NULL)
+
 const OSSL_CORE_HANDLE *FIPS_get_core_handle(OSSL_LIB_CTX *ctx);
 
 int ossl_cipher_capable_aes_cbc_hmac_sha1(void);

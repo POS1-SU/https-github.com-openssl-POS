@@ -330,7 +330,7 @@ static int hmac_set_ctx_params(void *vmacctx, const OSSL_PARAM params[])
     OSSL_LIB_CTX *ctx = PROV_LIBCTX_OF(macctx->provctx);
     const OSSL_PARAM *p;
 
-    if (OSSL_PARAM_is_empty(params))
+    if (OSSL_PARAM_IS_EMPTY(params))
         return 1;
 
     if (!OSSL_FIPS_IND_SET_CTX_PARAM(macctx, OSSL_FIPS_IND_SETTABLE0, params,

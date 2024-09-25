@@ -356,7 +356,7 @@ static int aes_ocb_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     const OSSL_PARAM *p;
     size_t sz;
 
-    if (OSSL_PARAM_is_empty(params))
+    if (OSSL_PARAM_IS_EMPTY(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_AEAD_TAG);

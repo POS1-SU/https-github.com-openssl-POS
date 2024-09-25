@@ -832,7 +832,7 @@ int ec_set_params(void *key, const OSSL_PARAM params[])
 
     if (key == NULL)
         return 0;
-    if (OSSL_PARAM_is_empty(params))
+    if (OSSL_PARAM_IS_EMPTY(params))
         return 1;
 
     if (!ossl_ec_group_set_params((EC_GROUP *)EC_KEY_get0_group(key), params))

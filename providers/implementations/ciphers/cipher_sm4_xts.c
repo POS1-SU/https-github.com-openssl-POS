@@ -205,7 +205,7 @@ static int sm4_xts_set_ctx_params(void *vxctx, const OSSL_PARAM params[])
     PROV_SM4_XTS_CTX *xctx = (PROV_SM4_XTS_CTX *)vxctx;
     const OSSL_PARAM *p;
 
-    if (OSSL_PARAM_is_empty(params))
+    if (OSSL_PARAM_IS_EMPTY(params))
         return 1;
 
     /*-

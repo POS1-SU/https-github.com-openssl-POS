@@ -252,7 +252,7 @@ int ossl_gcm_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     void *vp;
     int type;
 
-    if (OSSL_PARAM_is_empty(params))
+    if (OSSL_PARAM_IS_EMPTY(params))
         return 1;
 
     for (p = params; p->key != NULL; p++) {
