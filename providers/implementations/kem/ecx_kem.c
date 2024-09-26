@@ -248,7 +248,7 @@ static int ecxkem_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 
     if (ctx == NULL)
         return 0;
-    if (OSSL_PARAM_IS_EMPTY(params))
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_KEM_PARAM_IKME);

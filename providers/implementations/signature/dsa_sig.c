@@ -712,7 +712,7 @@ static int dsa_common_set_ctx_params(void *vpdsactx, const OSSL_PARAM params[])
 
     if (pdsactx == NULL)
         return 0;
-    if (OSSL_PARAM_IS_EMPTY(params))
+    if (ossl_param_is_empty(params))
         return 1;
 
     if (!OSSL_FIPS_IND_SET_CTX_PARAM(pdsactx, OSSL_FIPS_IND_SETTABLE0, params,
@@ -748,7 +748,7 @@ static int dsa_set_ctx_params(void *vpdsactx, const OSSL_PARAM params[])
     if ((ret = dsa_common_set_ctx_params(pdsactx, params)) <= 0)
         return ret;
 
-    if (OSSL_PARAM_IS_EMPTY(params))
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_SIGNATURE_PARAM_DIGEST);

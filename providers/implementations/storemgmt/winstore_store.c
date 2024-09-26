@@ -120,7 +120,7 @@ static int winstore_set_ctx_params(void *loaderctx, const OSSL_PARAM params[])
     const OSSL_PARAM *p;
     int do_reset = 0;
 
-    if (OSSL_PARAM_IS_EMPTY(params))
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_STORE_PARAM_PROPERTIES);
