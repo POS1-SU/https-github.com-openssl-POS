@@ -478,6 +478,7 @@ B<-tls1_prf_key_check>
 B<-sshkdf_key_check>
 B<-sskdf_key_check>
 B<-x963kdf_key_check>
+B<-x942kdf_key_check>
 B<-ecdh_cofactor_check>
 
 =head1 COPYRIGHT
