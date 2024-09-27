@@ -37,7 +37,13 @@ changes:
 
 This release adds the following new features:
 
-  * none yet
+  * Allow the FIPS provider to use the optional `JITTER` seed source.
+    Because this seed source is not part of the OpenSSL FIPS validations,
+    it should only be enabled after the [jitterentropy-library] has been
+    assessed for entropy quality.  Moreover, the FIPS provider including
+    this entropy source will need to be validated by the [CVMP] before
+    FIPS compliance can be claimed.  Enable this using the configuration
+    option `enable-fips-jitter`.
 
 OpenSSL 3.4
 -----------
@@ -2007,3 +2013,5 @@ OpenSSL 0.9.x
 [CHANGES.md]: ./CHANGES.md
 [README-QUIC.md]: ./README-QUIC.md
 [issue tracker]: https://github.com/openssl/openssl/issues
+[CMVP]: https://csrc.nist.gov/projects/cryptographic-module-validation-program
+[jitterentropy-library]: https://github.com/smuellerDD/jitterentropy-library
